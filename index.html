@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Number Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        h1 {
+            font-size: 36px;
+            font-weight: 600;
+            color: #1a73e8;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.2);
+            animation: glowText 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glowText {
+            0% { text-shadow: 0 0 10px #1a73e8, 0 0 20px #1a73e8, 0 0 30px #1a73e8; }
+            100% { text-shadow: 0 0 20px #ffcc00, 0 0 40px #ffcc00, 0 0 60px #ffcc00; }
+        }
+
+        p {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #userInput {
+            padding: 12px;
+            width: 75%;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 20px 0;
+            outline: none;
+            transition: all 0.3s ease;
+            background-color: #f7f7f7;
+        }
+
+        #userInput:focus {
+            border-color: #1a73e8;
+            box-shadow: 0 0 8px rgba(26, 115, 232, 0.5);
+            background-color: #fff;
+        }
+
+        button {
+            padding: 14px 30px;
+            font-size: 18px;
+            border: none;
+            background-color: #1a73e8;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #155b8a;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #feedback {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        #feedback.success {
+            color: #4caf50;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #feedback.error {
+            color: #f44336;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #attemptsSection {
+            margin-top: 20px;
+        }
+
+        #attempts, #timer {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        #attemptsSection p {
+            margin-bottom: 10px;
+        }
+
+        #attemptsSection {
+            background-color: rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        #attemptsSection:hover {
+            background-color: rgba(0, 0, 0, 0.15);
+        }
+
+        button.hidden {
+            display: none;
+        }
+
+        /* Animations */
+        .game-container.shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(-10px); }
+            25% { transform: translateX(10px); }
+            50% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .game-container {
+                width: 90%;
+                padding: 30px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            #userInput {
+                width: 80%;
+            }
+
+            button {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Guess the Number</h1>
+        <p>Guess a number between <span id="range">1 and 100</span></p>
+        <input type="number" id="userInput" placeholder="Enter your guess" />
+        <button id="submitBtn">Submit</button>
+        <div id="feedback"></div>
+        <div id="attemptsSection">
+            <p id="attempts">Attempts left: <span id="attemptsCount">10</span></p>
+            <p id="timer">Time Left: <span id="timerCount">30</span>s</p>
+        </div>
+        <button id="restartBtn" class="hidden">Restart Game</button>
+    </div>
+    <audio id="correctSound" src="correct.mp3" preload="auto"></audio>
+    <audio id="incorrectSound" src="incorrect.mp3" preload="auto"></audio>
+    <audio id="gameOverSound" src="gameover.mp3" preload="auto"></audio>
+    <script>
+        let randomNumber = Math.floor(Math.random() * 100) + 1;
+        let attempts = 10;
+        let maxAttempts = attempts;
+        let timer = 30;
+
+        const submitBtn = document.getElementById('submitBtn');
+        const userInput = document.getElementById('userInput');
+        const feedback = document.getElementById('feedback');
+        const attemptsText = document.getElementById('attemptsCount');
+        const timerText = document.getElementById('timerCount');
+        const restartBtn = document.getElementById('restartBtn');
+        const correctSound = document.getElementById('correctSound');
+        const incorrectSound = document.getElementById('incorrectSound');
+        const gameOverSound = document.getElementById('gameOverSound');
+
+        // Update the slider value as it is moved
+        userInput.addEventListener('input', () => {
+            sliderValue.textContent = userInput.value;
+        });
+
+        // Timer interval
+        let timerInterval = setInterval(() => {
+            if (timer > 0) {
+                timer--;
+                timerText.textContent = `${timer}s`;
+            } else {
+                endGame("Game Over! Time's up.");
+            }
+        }, 1000);
+
+        submitBtn.addEventListener('click', () => {
+            const guess = parseInt(userInput.value);
+
+            if (isNaN(guess) || guess < 1 || guess > 100) {
+                feedback.textContent = "Please enter a valid number between 1 and 100!";
+                feedback.className = "error";
+                shakeGame();
+                return;
+            }
+
+            attempts--;
+            attemptsText.textContent = attempts;
+
+            if (guess < randomNumber) {
+                feedback.textContent = 'Too low! Try a higher number.';
+                feedback.className = 'error';
+                incorrectSound.play();
+                shakeGame();
+            } else if (guess > randomNumber) {
+                feedback.textContent = 'Too high! Try a lower number.';
+                feedback.className = 'error';
+                incorrectSound.play();
+                shakeGame();
+            } else {
+                feedback.textContent = `Correct! The number was ${randomNumber}.`;
+                feedback.className = 'success';
+                correctSound.play();
+                restartBtn.classList.remove('hidden');
+                submitBtn.disabled = true;
+                clearInterval(timerInterval);  // Stop the timer when the game is won
+            }
+
+            if (attempts <= 0 && guess !== randomNumber) {
+                endGame(`Game Over! The correct number was ${randomNumber}.`);
+            }
+        });
+
+        restartBtn.addEventListener('click', () => {
+            attempts = maxAttempts;
+            timer = 30;
+            randomNumber = Math.floor(Math.random() * 100) + 1;
+            attemptsText.textContent = attempts;
+            timerText.textContent = `${timer}s`;
+            feedback.textContent = '';
+            restartBtn.classList.add('hidden');
+            submitBtn.disabled = false;
+            userInput.value = '';
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (timer > 0) {
+                    timer--;
+                    timerText.textContent = `${timer}s`;
+                } else {
+                    endGame("Game Over! Time's up.");
+                }
+            }, 1000);
+        });
+
+        function endGame(message) {
+            feedback.textContent = message;
+            feedback.className = "error";
+            submitBtn.disabled = true;
+            gameOverSound.play();
+            restartBtn.classList.remove('hidden');
+            clearInterval(timerInterval);
+        }
+
+        function shakeGame() {
+            document.querySelector('.game-container').classList.add('shake');
+            setTimeout(() => {
+                document.querySelector('.game-container').classList.remove('shake');
+            }, 500);
+        }
+    </script>
+</body>
+</html>
